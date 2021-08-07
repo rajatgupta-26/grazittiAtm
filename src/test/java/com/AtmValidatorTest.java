@@ -1,7 +1,7 @@
 package com;
 
 import com.exception.InvalidAmountException;
-import com.util.BankValidator;
+import com.util.AtmValidator;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,11 +11,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class BankValidatorTest {
+public class AtmValidatorTest {
 
     @Test
     public void validateMinAmountSuccess() throws InvalidAmountException {
-        boolean result = BankValidator.validateAmount(50);
+        boolean result = AtmValidator.validateAmount(50);
         Assert.assertTrue(result);
     }
 
@@ -24,7 +24,7 @@ public class BankValidatorTest {
         String expectedErr = "Min Amount:10,  Amount less than min amount";
         String errMsg = null;
         try {
-            BankValidator.validateAmount(1);
+            AtmValidator.validateAmount(1);
         } catch (InvalidAmountException e){
             errMsg = e.getMessage();
         }

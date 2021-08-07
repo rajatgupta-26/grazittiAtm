@@ -3,19 +3,20 @@ package com.controller;
 import com.exception.InvalidAmountException;
 import com.model.response.DispenseMoneyResponse;
 import com.util.Constant;
-import com.util.BankValidator;
+import com.util.AtmValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 
+
 @Controller
 public class AtmController {
 
     private final Logger logger = LoggerFactory.getLogger(AtmController.class);
 
-    public ResponseEntity<DispenseMoneyResponse> calculateBank(int amount){
+    public ResponseEntity<DispenseMoneyResponse> calculateBank(int amount, int[] requiredCurrency){
         String responseCode;
         String responseDesc;
         String responseStatus;
@@ -23,12 +24,25 @@ public class AtmController {
 
         DispenseMoneyResponse responseWrapper = new DispenseMoneyResponse();
         try {
-            BankValidator.validateAmount(amount);
-            int[] notesCounter = getNumberOfNotes(amount, null);
+            boolean isCurrencySpecified = false;
+            if(requiredCurrency.length > 0){
+                AtmValidator.validateRequiredCurrency(requiredCurrency);
+                isCurrencySpecified = true;
+            }
+
+            sortCurrency(requiredCurrency);
+            AtmValidator.validateAmount(amount);
+            int[] notesCounter = getNumberOfNotes(amount, requiredCurrency);
             StringBuilder body = new StringBuilder();
-            for (int i = 0; i < Constant.DEFAULT_CURRENCY_AVAILABLE.length; i++) {
-                if (notesCounter[i] != 0) {
-                    body.append(Constant.DEFAULT_CURRENCY_AVAILABLE[i]).append(" : ").append(notesCounter[i]).append(",");
+            for (int i = 0; i < notesCounter.length; i++) {
+                if(isCurrencySpecified){
+                    if (notesCounter[i] != 0) {
+                        body.append(requiredCurrency[i]).append(" : ").append(notesCounter[i]).append(",");
+                    }
+                } else{
+                    if (notesCounter[i] != 0) {
+                        body.append(Constant.DEFAULT_CURRENCY_AVAILABLE[i]).append(" : ").append(notesCounter[i]).append(",");
+                    }
                 }
             }
             responseBody = String.valueOf(body);
@@ -56,19 +70,42 @@ public class AtmController {
 
     private int[] getNumberOfNotes(int amount, int[] currencyToBeUsed) throws InvalidAmountException {
         int numOfCurrencyAvailable = Constant.DEFAULT_CURRENCY_AVAILABLE.length;
+        int[] currencyValue = Constant.DEFAULT_CURRENCY_AVAILABLE;
+        if(currencyToBeUsed.length != 0){
+            numOfCurrencyAvailable = currencyToBeUsed.length;
+            currencyValue = currencyToBeUsed;
+        }
         int[] noteCounter = new int[numOfCurrencyAvailable];
+        int leftAmount = compute(numOfCurrencyAvailable, amount, currencyValue, noteCounter);
 
-        for (int i = 0; i < numOfCurrencyAvailable; i++) {
-            int noteValue = Constant.DEFAULT_CURRENCY_AVAILABLE[i];
+        if(leftAmount != 0){
+            System.out.println(amount);
+            throw new InvalidAmountException("Amount entered can not be dispensed, " +
+                    "Please select currency in multiple of 100");
+        }
+        return noteCounter;
+    }
+
+    private int compute(int length, int amount, int[] currencyValue, int[] noteCounter){
+        for (int i = 0; i < length; i++) {
+            int noteValue = currencyValue[i];
             if (amount >= noteValue) {
                 noteCounter[i] = amount / noteValue;
                 amount -= noteCounter[i] * noteValue;
             }
         }
-        if(amount != 0){
-            throw new InvalidAmountException("Amount entered can not be dispensed, " +
-                    "Please select currency in multiple of 100");
+        return amount;
+    }
+
+    private void sortCurrency(int[] arr) {
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = i + 1; j < arr.length; j++) {
+                if (arr[i] < arr[j]) {
+                    int temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
         }
-        return noteCounter;
     }
 }
