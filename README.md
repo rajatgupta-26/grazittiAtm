@@ -10,8 +10,8 @@ $ brew install maven
 ### Running project 
 * Clone and go to the project by running command
 ```
-$ git clone git@github.com:Skhwan/atm-simulator.git
-$ cd atm-simulator
+$ git clone https://github.com/rajatgupta-26/grazittiAtm
+$ cd grazittiAtm
 ```
 
 * Then prepare project dependencies with
